@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - TradeMatch</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .products-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .search-bar { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .search-bar input, .search-bar select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .search-bar button { padding: 10px 30px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .search-bar button:hover { background: #0052a3; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .product-item { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .product-item:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .product-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
+        .product-title { font-size: 20px; font-weight: bold; margin: 0; }
+        .product-price { font-size: 28px; font-weight: bold; margin: 10px 0 0 0; }
+        .product-body { padding: 20px; }
+        .product-desc { color: #666; margin-bottom: 10px; line-height: 1.5; }
+        .product-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; font-size: 14px; }
+        .meta-item { background: #f5f5f5; padding: 8px; border-radius: 4px; }
+        .meta-label { font-weight: bold; color: #333; }
+        .meta-value { color: #666; }
+        .seller-info { background: #f9f9f9; padding: 15px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .seller-name { font-weight: bold; }
+        .seller-rating { color: #ffa500; }
+        .product-actions { padding: 20px; display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background: #0066cc; color: white; flex: 1; }
+        .btn-primary:hover { background: #0052a3; }
+        .btn-secondary { background: #666; color: white; flex: 1; }
+        .btn-secondary:hover { background: #555; }
+        .no-products { text-align: center; padding: 40px; color: #666; }
+        .message { padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .message.success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid #4caf50; }
+        .message.error { background: #ffebee; color: #c62828; border-left: 4px solid #f44336; }
+        .filters-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .filter-group { margin-bottom: 20px; }
+        .filter-group label { display: block; font-weight: bold; margin-bottom: 8px; }
+        .sort-controls { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">TradeMatch</div>
+            <ul>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="products-container">
+        <h2>Browse Products</h2>
+        <div id="message"></div>
+
+        <div class="filters-section">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search products by title..." style="flex: 1;">
+                <input type="text" id="categoryInput" placeholder="Filter by category...">
+                <select id="sortInput">
+                    <option value="newest">Newest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="rating">Highest Rated</option>
+                </select>
+                <button onclick="searchAndFilter()">Search</button>
+                <button onclick="resetFilters()" style="background: #666; color: white; border: none; padding: 10px 30px; border-radius: 4px; cursor: pointer;">Reset</button>
+            </div>
+        </div>
+
+        <div id="productsList" class="products-grid"></div>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 TradeMatch. All rights reserved.</p>
+    </footer>
+
+    <script src="../js/api-client.js"></script>
+    <script>
+        const api = new TradeMatchAPI();
+
+        window.addEventListener('load', async () => {
+            const isAuth = await api.checkAuth();
+            if (!isAuth) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadProducts();
+        });
+
+        async function loadProducts() {
+            try {
+                const data = await api.browseProducts();
+                displayProducts(data.products);
+            } catch (error) {
+                showMessage('Error loading products: ' + error.message, 'error');
+            }
+        }
+
+        async function searchAndFilter() {
+            const search = document.getElementById('searchInput').value;
+            const category = document.getElementById('categoryInput').value;
+            const sort = document.getElementById('sortInput').value;
+
+            try {
+                const data = await api.browseProducts({ search, category });
+                let products = data.products;
+
+                // Client-side sorting
+                if (sort === 'price-low') {
+                    products.sort((a, b) => a.price - b.price);
+                } else if (sort === 'price-high') {
+                    products.sort((a, b) => b.price - a.price);
+                } else if (sort === 'rating') {
+                    products.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                }
+
+                displayProducts(products);
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        function displayProducts(products) {
+            if (!products || products.length === 0) {
+                document.getElementById('productsList').innerHTML = '<div class="no-products">No products found. Try adjusting your filters.</div>';
+                return;
+            }
+
+            const html = products.map(p => `
+                <div class="product-item">
+                    <div class="product-header">
+                        <div class="product-title">${escapeHtml(p.title)}</div>
+                        <div class="product-price">${p.currency} ${parseFloat(p.price).toFixed(2)}</div>
+                    </div>
+                    <div class="product-body">
+                        <p class="product-desc">${escapeHtml(p.description || 'No description available')}</p>
+                        <div class="product-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">Category</div>
+                                <div class="meta-value">${escapeHtml(p.category || 'General')}</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">Condition</div>
+                                <div class="meta-value">${escapeHtml(p.condition || 'Used')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="seller-info">
+                        <div>
+                            <div class="seller-name">${escapeHtml(p.full_name || 'Unknown Seller')}</div>
+                            <div class="seller-rating">★ ${(p.rating || 0).toFixed(1)} (${p.trade_count || 0} trades)</div>
+                        </div>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn btn-primary" onclick="showInterestModal(${p.id}, ${p.user_id}, '${escapeHtml(p.title)}')">
+                            📩 Show Interest
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewSeller(${p.user_id})">View Seller</button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('productsList').innerHTML = html;
+        }
+
+        async function showInterestModal(productId, userId, productTitle) {
+            const message = prompt(`Send a message to the seller about "${productTitle}":\n\n(Optional - leave blank to send without message)`);
+            if (message === null) return; // User cancelled
+
+            try {
+                await api.createMatch(userId, productId);
+                showMessage(`✓ Interest registered for "${productTitle}"!`, 'success');
+                
+                if (message.trim()) {
+                    await api.sendMessage(userId, message);
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function viewSeller(userId) {
+            try {
+                const data = await api.getUserProfile(userId);
+                const user = data.user;
+                alert(`
+Seller: ${user.full_name}
+Rating: ★ ${(user.rating || 0).toFixed(1)}
+Completed Trades: ${user.trade_count || 0}
+Location: ${user.location || 'Not specified'}
+Bio: ${user.bio || 'No bio'}
+                `);
+            } catch (error) {
+                alert('Error loading seller info: ' + error.message);
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryInput').value = '';
+            document.getElementById('sortInput').value = 'newest';
+            loadProducts();
+        }
+
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
+            setTimeout(() => {
+                msgDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function logout() {
+            api.logout();
+            window.location.href = '../index.html';
+        }
+    </script>
+</body>
+</html>

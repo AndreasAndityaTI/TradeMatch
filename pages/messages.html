@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - TradeMatch</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .messages-container { display: flex; height: calc(100vh - 120px); }
+        .conversations-list { width: 300px; border-right: 1px solid #ddd; overflow-y: auto; background: #f5f5f5; }
+        .conversation-item { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; transition: 0.2s; }
+        .conversation-item:hover { background: #e8e8e8; }
+        .conversation-item.active { background: white; border-left: 4px solid #0066cc; }
+        .conversation-name { font-weight: bold; margin-bottom: 5px; }
+        .conversation-preview { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conversation-time { font-size: 11px; color: #999; }
+        .unread { background: #e3f2fd; font-weight: bold; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; }
+        .chat-header { background: white; padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h3 { margin: 0; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; background: #f9f9f9; }
+        .message { margin-bottom: 15px; display: flex; gap: 10px; }
+        .message.sent { justify-content: flex-end; }
+        .message.received { justify-content: flex-start; }
+        .message-bubble { max-width: 60%; padding: 12px; border-radius: 8px; word-wrap: break-word; }
+        .message.sent .message-bubble { background: #0066cc; color: white; border-radius: 15px 15px 0 15px; }
+        .message.received .message-bubble { background: white; border: 1px solid #ddd; border-radius: 15px 15px 15px 0; }
+        .message-time { font-size: 11px; color: #999; margin-top: 5px; }
+        .chat-input { padding: 20px; background: white; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+        .chat-input input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .chat-input button { padding: 10px 30px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .chat-input button:hover { background: #0052a3; }
+        .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 18px; }
+        .no-conversations { display: flex; align-items: center; justify-content: center; height: 100%; color: #999; text-align: center; padding: 20px; }
+        .message-date { text-align: center; color: #999; font-size: 12px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">TradeMatch</div>
+            <ul>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="messages-container">
+        <div class="conversations-list" id="conversationsList">
+            <div class="no-conversations">
+                <div>
+                    <p>📭</p>
+                    <p>No conversations yet</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="empty-state">
+                <div>
+                    <p>💬</p>
+                    <p>Select a conversation to start chatting</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 TradeMatch. All rights reserved.</p>
+    </footer>
+
+    <script src="../js/api-client.js"></script>
+    <script>
+        const api = new TradeMatchAPI();
+        let currentConversation = null;
+        let currentUserId = null;
+        let conversationMap = new Map(); // Map user_id to conversation
+
+        window.addEventListener('load', async () => {
+            const isAuth = await api.checkAuth();
+            if (!isAuth) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const profile = await api.getProfile();
+            currentUserId = profile.user.id;
+
+            loadConversations();
+            setInterval(loadConversations, 3000); // Refresh every 3 seconds
+        });
+
+        async function loadConversations() {
+            try {
+                const data = await api.getMessages({ limit: 1000 });
+                const messages = data.messages;
+
+                // Group messages by user (conversation)
+                const conversations = new Map();
+
+                messages.forEach(msg => {
+                    const otherUserId = msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
+                    const otherUserName = msg.sender_id === currentUserId ? msg.receiver_name : msg.sender_name;
+
+                    if (!conversations.has(otherUserId)) {
+                        conversations.set(otherUserId, {
+                            userId: otherUserId,
+                            userName: otherUserName,
+                            lastMessage: msg.message_text,
+                            lastTime: msg.created_at,
+                            unread: msg.receiver_id === currentUserId && !msg.is_read
+                        });
+                    } else {
+                        const conv = conversations.get(otherUserId);
+                        if (new Date(msg.created_at) > new Date(conv.lastTime)) {
+                            conv.lastMessage = msg.message_text;
+                            conv.lastTime = msg.created_at;
+                            conv.unread = msg.receiver_id === currentUserId && !msg.is_read;
+                        }
+                    }
+                });
+
+                displayConversations(Array.from(conversations.values()));
+                conversationMap = conversations;
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+            }
+        }
+
+        function displayConversations(conversations) {
+            if (conversations.length === 0) {
+                document.getElementById('conversationsList').innerHTML = '<div class="no-conversations"><div><p>📭</p><p>No conversations yet</p></div></div>';
+                return;
+            }
+
+            // Sort by last message time (newest first)
+            conversations.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+
+            const html = conversations.map(conv => `
+                <div class="conversation-item ${conv.unread ? 'unread' : ''} ${currentConversation?.userId === conv.userId ? 'active' : ''}" 
+                     onclick="selectConversation(${conv.userId}, '${escapeHtml(conv.userName)}')">
+                    <div class="conversation-name">${escapeHtml(conv.userName)}</div>
+                    <div class="conversation-preview">${escapeHtml(conv.lastMessage)}</div>
+                    <div class="conversation-time">${formatTime(conv.lastTime)}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('conversationsList').innerHTML = html;
+        }
+
+        async function selectConversation(userId, userName) {
+            currentConversation = { userId, userName };
+
+            try {
+                const data = await api.getMessages({ limit: 100 });
+                const messages = data.messages.filter(m => 
+                    (m.sender_id === currentUserId && m.receiver_id === userId) ||
+                    (m.sender_id === userId && m.receiver_id === currentUserId)
+                );
+
+                displayChatArea(messages, userName);
+                document.querySelectorAll('.conversation-item').forEach(item => item.classList.remove('active'));
+                event.target.closest('.conversation-item')?.classList.add('active');
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            }
+        }
+
+        function displayChatArea(messages, userName) {
+            messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            let messageHtml = '<div class="chat-header">';
+            messageHtml += `<h3>${escapeHtml(userName)}</h3>`;
+            messageHtml += '</div>';
+            messageHtml += '<div class="chat-messages">';
+
+            let lastDate = null;
+            messages.forEach(msg => {
+                const msgDate = new Date(msg.created_at).toDateString();
+                if (lastDate !== msgDate) {
+                    messageHtml += `<div class="message-date">${formatDate(msg.created_at)}</div>`;
+                    lastDate = msgDate;
+                }
+
+                const isOwn = msg.sender_id === currentUserId;
+                messageHtml += `
+                    <div class="message ${isOwn ? 'sent' : 'received'}">
+                        <div class="message-bubble">
+                            <div>${escapeHtml(msg.message_text)}</div>
+                            <div class="message-time">${formatTime(msg.created_at)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            messageHtml += '</div>';
+            messageHtml += `
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type your message..." 
+                           onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            `;
+
+            document.getElementById('chatArea').innerHTML = messageHtml;
+            document.getElementById('chatArea').querySelector('.chat-messages').scrollTop = 
+                document.getElementById('chatArea').querySelector('.chat-messages').scrollHeight;
+            document.getElementById('messageInput').focus();
+        }
+
+        async function sendMessage() {
+            if (!currentConversation) return;
+
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            try {
+                await api.sendMessage(currentConversation.userId, text);
+                input.value = '';
+                await selectConversation(currentConversation.userId, currentConversation.userName);
+            } catch (error) {
+                alert('Error sending message: ' + error.message);
+            }
+        }
+
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+            if (msgDate.getTime() === today.getTime()) {
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            } else if (msgDate.getTime() === yesterday.getTime()) {
+                return 'Yesterday ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+            if (msgDate.getTime() === today.getTime()) {
+                return 'Today';
+            } else if (msgDate.getTime() === yesterday.getTime()) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function logout() {
+            api.logout();
+            window.location.href = '../index.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TradeMatch — Matching</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .container { display:flex; gap:20px; padding:20px; }
+    .col { flex:1; background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08);} 
+    .product { border-bottom:1px solid #eee; padding:8px 0; }
+    .btn { padding:6px 10px; border-radius:4px; cursor:pointer; }
+    .btn-primary { background:#0b74de; color:#fff; border:none; }
+    .btn-ghost { background:transparent; border:1px solid #ccc; }
+    .muted { color:#666; font-size:0.9rem; }
+  </style>
+</head>
+<body>
+  <header style="padding:12px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+    <h2>Matching</h2>
+    <nav>
+      <a href="dashboard.html">Dashboard</a> · <a href="products.html">Products</a> · <a href="messages.html">Messages</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="col" id="availableCol">
+      <h3>Available Products</h3>
+      <div id="productsList">Loading products…</div>
+    </section>
+
+    <section class="col" id="matchesCol">
+      <h3>My Matches</h3>
+      <div id="matchesList">Loading your matches…</div>
+    </section>
+  </main>
+
+  <script type="module" src="/js/api-client.js"></script>
+  <script type="module" src="/js/matches.js"></script>
+</body>
+</html>

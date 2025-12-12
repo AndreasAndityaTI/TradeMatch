@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeMatch - Connect Sellers & Buyers</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">TradeMatch</div>
+            <button id="sidebarToggle" class="hamburger" aria-label="Toggle menu">☰</button>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="pages/login.html">Login</a></li>
+                <li><a href="pages/register.html">Sign Up</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Find Your Perfect Trade Partner</h1>
+            <p>Connect with sellers and buyers in your area. Swipe, match, and start trading today!</p>
+            <a href="pages/register.html" class="cta-button">Get Started</a>
+        </section>
+
+        <section id="about" class="about">
+            <h2>About TradeMatch</h2>
+            <p>TradeMatch is the ultimate platform for connecting sellers and buyers. Whether you're looking to sell your goods or find the perfect purchase, our matching system helps you find compatible trade partners quickly and easily.</p>
+        </section>
+
+        <section id="how-it-works" class="how-it-works">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <h3>1. Create Your Profile</h3>
+                    <p>Set up your profile as a seller or buyer, add your interests and preferences.</p>
+                </div>
+                <div class="step">
+                    <h3>2. Swipe & Match</h3>
+                    <p>Browse profiles and swipe right on potential trade partners.</p>
+                </div>
+                <div class="step">
+                    <h3>3. Chat & Trade</h3>
+                    <p>Connect with matches through our built-in chat system and arrange your trades.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 TradeMatch. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Hamburger menu toggle for mobile
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebarToggleBtn = document.getElementById('sidebarToggle');
+            if (sidebarToggleBtn) {
+                sidebarToggleBtn.addEventListener('click', (ev) => {
+                    // If narrow viewport, toggle header dropdown first
+                    if (window.innerWidth <= 768) {
+                        const topNav = document.querySelector('header nav ul');
+                        if (topNav) {
+                            topNav.classList.toggle('mobile-open');
+                            return;
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

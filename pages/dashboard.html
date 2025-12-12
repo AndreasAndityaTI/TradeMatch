@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - TradeMatch</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .dashboard-container { display: flex; min-height: calc(100vh - 120px); }
+        .sidebar { width: 250px; background: #f5f5f5; padding: 20px; border-right: 1px solid #ddd; }
+        .sidebar h3 { margin-top: 0; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar li { margin: 10px 0; }
+        .sidebar a { display: block; padding: 10px; background: white; border-radius: 4px; text-decoration: none; color: #333; cursor: pointer; }
+        .sidebar a:hover, .sidebar a.active { background: #0066cc; color: white; }
+        .main-content { flex: 1; padding: 30px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .product-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; }
+        .product-card h4 { margin-top: 0; }
+        .btn { padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        .btn:hover { background: #0052a3; }
+        .btn-danger { background: #d32f2f; }
+        .btn-danger:hover { background: #b71c1c; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .user-profile { background: white; padding: 20px; border-radius: 8px; }
+        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .message { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+        .message.success { background: #e8f5e9; color: #2e7d32; }
+        .message.error { background: #ffebee; color: #c62828; }
+        .rating { color: #ffa500; font-size: 18px; }
+        textarea { resize: vertical; min-height: 100px; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">TradeMatch</div>
+            <button id="sidebarToggle" class="hamburger" aria-label="Toggle menu">☰</button>
+            <ul>
+                <!-- <li><a href="../index.html">Home</a></li> -->
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <h3>Menu</h3>
+            <ul>
+                <li><a onclick="showSection('dashboard')" class="menu-link active">Dashboard</a></li>
+                <li><a onclick="showSection('profile')" class="menu-link">My Profile</a></li>
+                <li><a onclick="showSection('products')" class="menu-link">My Products</a></li>
+                <li><a onclick="showSection('browse')" class="menu-link">Browse Products</a></li>
+                <li><a onclick="showSection('matches')" class="menu-link">Matches</a></li>
+                <li><a onclick="showSection('messages')" class="menu-link">Messages</a></li>
+                <li><a onclick="showSection('create-product')" class="menu-link">+ Add Product</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="section active">
+                <h2>Dashboard</h2>
+                <div id="message"></div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Total Matches</h4>
+                        <p id="matchCount" style="font-size: 32px; margin: 0; color: #0066cc;">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Unread Messages</h4>
+                        <p id="messageCount" style="font-size: 32px; margin: 0; color: #ff9800;">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>My Products</h4>
+                        <p id="productCount" style="font-size: 32px; margin: 0; color: #4caf50;">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>My Rating</h4>
+                        <p id="userRating" style="font-size: 24px; margin: 0;"><span class="rating">★★★★★</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profile" class="section">
+                <h2>My Profile</h2>
+                <div id="profileMessage"></div>
+                <form id="profileForm" class="user-profile">
+                    <div class="form-group">
+                        <label for="prof_full_name">Full Name</label>
+                        <input type="text" id="prof_full_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prof_bio">Bio</label>
+                        <textarea id="prof_bio" placeholder="Tell others about yourself"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="prof_location">Location</label>
+                        <input type="text" id="prof_location" placeholder="City, Country">
+                    </div>
+                    <div class="form-group">
+                        <label for="prof_phone">Phone</label>
+                        <input type="tel" id="prof_phone">
+                    </div>
+                    <button type="submit" class="btn">Update Profile</button>
+                </form>
+            </div>
+
+            <!-- My Products Section -->
+            <div id="products" class="section">
+                <h2>My Products</h2>
+                <div id="productsList"></div>
+            </div>
+
+            <!-- Browse Products Section -->
+            <div id="browse" class="section">
+                <h2>Browse Products</h2>
+                <div class="form-group">
+                    <input type="text" id="searchInput" placeholder="Search products..." style="width: 300px;">
+                    <input type="text" id="categoryInput" placeholder="Filter by category..." style="width: 300px;">
+                    <button class="btn" onclick="searchProducts()">Search</button>
+                </div>
+                <div id="browseList"></div>
+            </div>
+
+            <!-- Matches Section -->
+            <div id="matches" class="section">
+                <h2>My Matches</h2>
+                <div id="matchesList"></div>
+            </div>
+
+            <!-- Messages Section -->
+            <div id="messages" class="section">
+                <h2>Messages</h2>
+                <div id="messagesList"></div>
+            </div>
+
+            <!-- Create Product Section -->
+            <div id="create-product" class="section">
+                <h2>Add New Product</h2>
+                <div id="createProductMessage"></div>
+                <form id="createProductForm">
+                    <div class="form-group">
+                        <label for="prod_title">Product Title</label>
+                        <input type="text" id="prod_title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod_description">Description</label>
+                        <textarea id="prod_description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod_category">Category</label>
+                        <input type="text" id="prod_category" placeholder="e.g., Electronics, Furniture">
+                    </div>
+                    <div class="form-group">
+                        <label for="prod_price">Price</label>
+                        <input type="number" id="prod_price" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod_currency">Currency</label>
+                        <select id="prod_currency">
+                            <option value="">Loading currencies...</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Create Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 TradeMatch. All rights reserved.</p>
+    </footer>
+
+    <script src="../js/api-client.js"></script>
+    <script>
+        const api = new TradeMatchAPI();
+        console.log('API initialized. Token:', api.token ? api.token.substring(0, 20) + '...' : 'NO TOKEN');
+
+        // Sidebar toggle for small screens
+        const sidebarToggleBtn = document.getElementById('sidebarToggle');
+        const sidebarEl = document.querySelector('.sidebar');
+        if (sidebarToggleBtn) {
+            sidebarToggleBtn.addEventListener('click', (ev) => {
+                // If narrow viewport, toggle header dropdown first
+                if (window.innerWidth <= 768) {
+                    const topNav = document.querySelector('header nav ul');
+                    if (topNav) {
+                        topNav.classList.toggle('mobile-open');
+                        return;
+                    }
+                }
+
+                // Otherwise toggle the sidebar (off-canvas)
+                if (sidebarEl) {
+                    sidebarEl.classList.toggle('open');
+                    sidebarToggleBtn.classList.toggle('is-open');
+                    // prevent body scroll when sidebar open on mobile
+                    if (sidebarEl.classList.contains('open')) {
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        document.body.style.overflow = '';
+                    }
+                }
+            });
+        }
+        // Close sidebar when clicking a menu link (mobile)
+        document.querySelectorAll('.sidebar .menu-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (sidebarEl && sidebarEl.classList.contains('open')) {
+                    sidebarEl.classList.remove('open');
+                    sidebarToggleBtn.classList.remove('is-open');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+
+        // Close sidebar when clicking outside it on mobile
+        document.addEventListener('click', (ev) => {
+            if (!sidebarEl || !sidebarEl.classList.contains('open')) return;
+            const target = ev.target;
+            if (!sidebarEl.contains(target) && target !== sidebarToggleBtn) {
+                sidebarEl.classList.remove('open');
+                sidebarToggleBtn.classList.remove('is-open');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Initialize dashboard
+        window.addEventListener('load', async () => {
+            console.log('Page loaded. Checking auth...');
+            const isAuth = await api.checkAuth();
+            console.log('Auth check result:', isAuth);
+            if (!isAuth) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadDashboardData();
+            setupEventListeners();
+        });
+
+        // Show section
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Load data for specific sections
+            if (sectionId === 'profile') loadProfile();
+            if (sectionId === 'products') loadMyProducts();
+            if (sectionId === 'browse') loadBrowseProducts();
+            if (sectionId === 'matches') loadMatches();
+            if (sectionId === 'messages') loadMessages();
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                console.log('Loading dashboard data...');
+                const [profile, matches, messages, products] = await Promise.all([
+                    api.getProfile(),
+                    api.getMatches(),
+                    api.getMessages({ limit: 100 }),
+                    api.getMyProducts()
+                ]);
+
+                console.log('Profile:', profile);
+                console.log('Matches:', matches);
+                console.log('Messages:', messages);
+                console.log('Products:', products);
+
+                const matchCount = matches.matches ? matches.matches.length : 0;
+                const messageCount = messages.messages ? messages.messages.filter(m => !m.is_read).length : 0;
+                const productCount = products.products ? products.products.length : 0;
+                const rating = profile.user ? (profile.user.rating || 0) : 0;
+
+                console.log('Counts:', { matchCount, messageCount, productCount, rating });
+
+                document.getElementById('matchCount').textContent = matchCount;
+                document.getElementById('messageCount').textContent = messageCount;
+                document.getElementById('productCount').textContent = productCount;
+                document.getElementById('userRating').innerHTML = `<span class="rating">${'★'.repeat(Math.round(rating))}${'☆'.repeat(5 - Math.round(rating))}</span> (${rating})`;
+                
+                console.log('Dashboard data loaded successfully');
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load profile
+        async function loadProfile() {
+            try {
+                const data = await api.getProfile();
+                const user = data.user;
+                document.getElementById('prof_full_name').value = user.full_name;
+                document.getElementById('prof_bio').value = user.bio || '';
+                document.getElementById('prof_location').value = user.location || '';
+                document.getElementById('prof_phone').value = user.phone || '';
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        // Load my products
+        async function loadMyProducts() {
+            try {
+                const data = await api.getMyProducts();
+                const html = data.products.map(p => `
+                    <div class="product-card">
+                        <h4>${p.title}</h4>
+                        <p>${p.description || 'No description'}</p>
+                        <p><strong>Price:</strong> ${p.currency} ${p.price}</p>
+                        <p><strong>Category:</strong> ${p.category || 'N/A'}</p>
+                        <button class="btn" onclick="editProduct(${p.id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteProduct(${p.id})">Delete</button>
+                    </div>
+                `).join('');
+                document.getElementById('productsList').innerHTML = html || '<p>No products yet. <a onclick="showSection(\'create-product\')">Create one</a></p>';
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        // Load browse products
+        async function loadBrowseProducts() {
+            try {
+                const data = await api.browseProducts();
+                const html = data.products.map(p => `
+                    <div class="product-card">
+                        <h4>${p.title}</h4>
+                        <p>${p.description || 'No description'}</p>
+                        <p><strong>Seller:</strong> ${p.full_name}</p>
+                        <p><strong>Price:</strong> ${p.currency} ${p.price}</p>
+                        <p><strong>Rating:</strong> <span class="rating">${'★'.repeat(Math.round(p.rating || 0))}${'☆'.repeat(5 - Math.round(p.rating || 0))}</span></p>
+                        <button class="btn" onclick="createMatch(${p.user_id}, ${p.id})">Interested</button>
+                    </div>
+                `).join('');
+                document.getElementById('browseList').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        // Load matches
+        async function loadMatches() {
+            try {
+                const data = await api.getMatches();
+                const html = data.matches.map(m => `
+                    <div class="product-card">
+                        <h4>Match with ${m.matched_user}</h4>
+                        <p><strong>Status:</strong> ${m.status}</p>
+                        <button class="btn" onclick="updateMatchStatus(${m.id}, 'accepted')">Accept</button>
+                        <button class="btn" onclick="updateMatchStatus(${m.id}, 'rejected')">Reject</button>
+                    </div>
+                `).join('');
+                document.getElementById('matchesList').innerHTML = html || '<p>No matches yet</p>';
+            } catch (error) {
+                console.error('Error loading matches:', error);
+            }
+        }
+
+        // Load messages
+        async function loadMessages() {
+            try {
+                const data = await api.getMessages();
+                const profile = await api.getProfile();
+                const currentUserId = profile.user.id;
+                const html = data.messages.slice(0, 20).map(m => `
+                    <div class="product-card">
+                        <p><strong>${m.sender_id === currentUserId ? 'You' : 'Sender'}:</strong> ${m.message_text}</p>
+                        <p style="font-size: 12px; color: #666;">${new Date(m.created_at).toLocaleString()}</p>
+                    </div>
+                `).join('');
+                document.getElementById('messagesList').innerHTML = html || '<p>No messages</p>';
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Search products
+        async function searchProducts() {
+            const search = document.getElementById('searchInput').value;
+            const category = document.getElementById('categoryInput').value;
+            try {
+                const data = await api.browseProducts({ search, category });
+                const html = data.products.map(p => `
+                    <div class="product-card">
+                        <h4>${p.title}</h4>
+                        <p>${p.description}</p>
+                        <p><strong>Price:</strong> ${p.currency} ${p.price}</p>
+                        <button class="btn" onclick="createMatch(${p.user_id}, ${p.id})">Interested</button>
+                    </div>
+                `).join('');
+                document.getElementById('browseList').innerHTML = html;
+            } catch (error) {
+                alert('Error searching: ' + error.message);
+            }
+        }
+
+        // Create match
+        async function createMatch(userId, productId) {
+            try {
+                await api.createMatch(userId, productId);
+                alert('Interest registered! Waiting for seller response.');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Update match status
+        async function updateMatchStatus(matchId, status) {
+            try {
+                await api.updateMatchStatus(matchId, status);
+                alert('Match status updated!');
+                loadMatches();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Delete product
+        async function deleteProduct(productId) {
+            if (confirm('Are you sure?')) {
+                try {
+                    await api.deleteProduct(productId);
+                    alert('Product deleted!');
+                    loadMyProducts();
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    await api.updateProfile({
+                        full_name: document.getElementById('prof_full_name').value,
+                        bio: document.getElementById('prof_bio').value,
+                        location: document.getElementById('prof_location').value,
+                        phone: document.getElementById('prof_phone').value
+                    });
+                    document.getElementById('profileMessage').innerHTML = '<div class="message success">✓ Profile updated!</div>';
+                } catch (error) {
+                    document.getElementById('profileMessage').innerHTML = `<div class="message error">✗ ${error.message}</div>`;
+                }
+            });
+
+            document.getElementById('createProductForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    await api.createProduct({
+                        title: document.getElementById('prod_title').value,
+                        description: document.getElementById('prod_description').value,
+                        category: document.getElementById('prod_category').value,
+                        price: parseFloat(document.getElementById('prod_price').value),
+                        currency: document.getElementById('prod_currency').value
+                    });
+                    document.getElementById('createProductMessage').innerHTML = '<div class="message success">✓ Product created!</div>';
+                    document.getElementById('createProductForm').reset();
+                    setTimeout(() => loadMyProducts(), 1000);
+                } catch (error) {
+                    document.getElementById('createProductMessage').innerHTML = `<div class="message error">✗ ${error.message}</div>`;
+                }
+            });
+        }
+
+        // Load currencies from API
+        async function loadCurrencies() {
+            try {
+                const select = document.getElementById('prod_currency');
+                // Using exchangerate-api.com free endpoint which includes all currencies
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                const data = await response.json();
+                const currencies = Object.keys(data.rates).sort();
+                
+                select.innerHTML = '';
+                currencies.forEach(currency => {
+                    const option = document.createElement('option');
+                    option.value = currency;
+                    option.textContent = currency;
+                    if (currency === 'USD') option.selected = true;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load currencies:', error);
+                // Fallback to common currencies if API fails
+                const select = document.getElementById('prod_currency');
+                const fallbackCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'CNY', 'INR', 'MXN', 'BRL', 'ZAR'];
+                select.innerHTML = '';
+                fallbackCurrencies.forEach(currency => {
+                    const option = document.createElement('option');
+                    option.value = currency;
+                    option.textContent = currency;
+                    if (currency === 'USD') option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // Load currencies when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCurrencies();
+        });
+
+        // Logout
+        function logout() {
+            api.logout();
+            window.location.href = '../index.html';
+        }
+    </script>
+</body>
+</html>
