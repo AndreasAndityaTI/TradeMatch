@@ -62,7 +62,7 @@
             if (sidebarToggleBtn) {
                 sidebarToggleBtn.addEventListener('click', (ev) => {
                     // If narrow viewport, toggle header dropdown first
-                    if (window.innerWidth <= 768) {
+                    if (window.matchMedia('(max-width: 768px)').matches) {
                         const topNav = document.querySelector('header nav ul');
                         if (topNav) {
                             topNav.classList.toggle('mobile-open');

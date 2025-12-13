@@ -80,14 +80,14 @@
             if (sidebarToggle && ul) {
                 sidebarToggle.addEventListener('click', function() {
                     // Only toggle on mobile screens
-                    if (window.innerWidth <= 768) {
+                    if (window.matchMedia('(max-width: 768px)').matches) {
                         ul.classList.toggle('mobile-open');
                     }
                 });
 
                 // Close menu when clicking outside
                 document.addEventListener('click', function(event) {
-                    if (!nav.contains(event.target) && window.innerWidth <= 768) {
+                    if (!nav.contains(event.target) && window.matchMedia('(max-width: 768px)').matches) {
                         ul.classList.remove('mobile-open');
                     }
                 });

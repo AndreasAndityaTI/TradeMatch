@@ -824,6 +824,13 @@ footer {
         color: var(--dark);
     }
 
+    /* Ensure hamburger is hidden on desktop */
+    @media (min-width: 769px) {
+        .hamburger {
+            display: none !important;
+        }
+    }
+
     .sidebar {
         transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
@@ -877,8 +884,8 @@ footer {
         header nav ul.mobile-open {
             display: block;
             position: absolute;
-            top: 64px;
-            right: 12px;
+            top: 100%;
+            right: 0;
             min-width: 160px;
             background: #fff;
             border-radius: 8px;
@@ -895,6 +902,7 @@ footer {
         header nav {
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
 
         /* Position hamburger neatly */

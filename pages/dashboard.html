@@ -189,7 +189,7 @@
         if (sidebarToggleBtn) {
             sidebarToggleBtn.addEventListener('click', (ev) => {
                 // If narrow viewport, toggle header dropdown first
-                if (window.innerWidth <= 768) {
+                if (window.matchMedia('(max-width: 768px)').matches) {
                     const topNav = document.querySelector('header nav ul');
                     if (topNav) {
                         topNav.classList.toggle('mobile-open');
@@ -223,6 +223,16 @@
 
         // Close sidebar when clicking outside it on mobile
         document.addEventListener('click', (ev) => {
+            // Close header dropdown if open and clicking outside
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                const topNav = document.querySelector('header nav ul');
+                const nav = document.querySelector('header nav');
+                if (topNav && topNav.classList.contains('mobile-open') && nav && !nav.contains(ev.target)) {
+                    topNav.classList.remove('mobile-open');
+                }
+            }
+
+            // Close sidebar
             if (!sidebarEl || !sidebarEl.classList.contains('open')) return;
             const target = ev.target;
             if (!sidebarEl.contains(target) && target !== sidebarToggleBtn) {
